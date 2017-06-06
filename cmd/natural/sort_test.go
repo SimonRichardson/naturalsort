@@ -219,3 +219,100 @@ func TestWrite(t *testing.T) {
 		}
 	})
 }
+
+func TestPerform(t *testing.T) {
+	t.Parallel()
+
+	t.Run("split words", func(t *testing.T) {
+		iso := splitJoin{
+			Split: splitOn(' '),
+			Join: func(x []string) string {
+				return strings.Join(x, " ")
+			},
+		}
+
+		var (
+			content = "e a b c d"
+			reader  = bytes.NewBufferString(content)
+			writer  bytes.Buffer
+		)
+
+		if err := perform(iso, reader, func(b *bytes.Buffer) error {
+			writer.Write(b.Bytes())
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		r := make([]byte, len(content))
+		if _, err := io.ReadFull(&writer, r); err != nil {
+			t.Fatal(err)
+		}
+
+		if expected, actual := "a b c d e", string(r); expected != actual {
+			t.Errorf("expected: %q, actual: %q", expected, actual)
+		}
+	})
+
+	t.Run("split comma", func(t *testing.T) {
+		iso := splitJoin{
+			Split: splitOn(','),
+			Join: func(x []string) string {
+				return strings.Join(x, ",")
+			},
+		}
+
+		var (
+			content = "e,a,b,c,d"
+			reader  = bytes.NewBufferString(content)
+			writer  bytes.Buffer
+		)
+
+		if err := perform(iso, reader, func(b *bytes.Buffer) error {
+			writer.Write(b.Bytes())
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		r := make([]byte, len(content))
+		if _, err := io.ReadFull(&writer, r); err != nil {
+			t.Fatal(err)
+		}
+
+		if expected, actual := "a,b,c,d,e", string(r); expected != actual {
+			t.Errorf("expected: %q, actual: %q", expected, actual)
+		}
+	})
+
+	t.Run("split newline", func(t *testing.T) {
+		iso := splitJoin{
+			Split: splitOn('\n'),
+			Join: func(x []string) string {
+				return strings.Join(x, "\n")
+			},
+		}
+
+		var (
+			content = "e\na\nb\nc\nd\n"
+			reader  = bytes.NewBufferString(content)
+			writer  bytes.Buffer
+		)
+
+		if err := perform(iso, reader, func(b *bytes.Buffer) error {
+			writer.Write(b.Bytes())
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		r := make([]byte, len(content))
+		if _, err := io.ReadFull(&writer, r); err != nil {
+			t.Fatal(err)
+		}
+
+		if expected, actual := "\na\nb\nc\nd\ne", string(r); expected != actual {
+			t.Errorf("expected: %q, actual: %q", expected, actual)
+		}
+	})
+}

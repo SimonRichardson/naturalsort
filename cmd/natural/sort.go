@@ -106,7 +106,7 @@ func runSort(args []string) error {
 				},
 			}
 
-			return naturalSort(iso, reader, writer)
+			return perform(iso, reader, writer)
 		}, func(error) {
 			// Nothing to close
 		})
@@ -201,7 +201,7 @@ func write(fsys fs.Filesystem, outputFile string, outputGzip, outputBase64 bool)
 	}
 }
 
-func naturalSort(iso splitJoin, reader io.Reader, writer writeFn) error {
+func perform(iso splitJoin, reader io.Reader, writer writeFn) error {
 	// Scan everything!
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(iso.Split)
