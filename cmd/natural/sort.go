@@ -10,6 +10,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"encoding/base64"
+
 	"github.com/SimonRichardson/naturalsort/pkg/fs"
 	"github.com/SimonRichardson/naturalsort/pkg/group"
 	"github.com/SimonRichardson/naturalsort/pkg/natural"
@@ -19,9 +21,11 @@ import (
 )
 
 const (
-	defaultSeparator  = ","
-	defaultInputGzip  = false
-	defaultOutputGzip = false
+	defaultSeparator    = ","
+	defaultInputGzip    = false
+	defaultInputBase64  = false
+	defaultOutputGzip   = false
+	defaultOutputBase64 = false
 )
 
 // runSort performs the sorting of the input
@@ -30,13 +34,17 @@ func runSort(args []string) error {
 	var (
 		flagset = flag.NewFlagSet("sort", flag.ExitOnError)
 
-		debug      = flagset.Bool("debug", false, "debug logging")
-		separator  = flagset.String("separator", defaultSeparator, "separation value")
-		input      = flagset.String("input", "", "input for natural sorting")
-		inputFile  = flagset.String("input.file", "", "file required to perform natural sorting on")
-		inputGzip  = flagset.Bool("input.gzip", defaultInputGzip, "decode gzip input")
-		outputFile = flagset.String("output.file", "", "output file for action performed")
-		outputGzip = flagset.Bool("output.gzip", defaultOutputGzip, "encode gzip output")
+		debug     = flagset.Bool("debug", false, "debug logging")
+		separator = flagset.String("separator", defaultSeparator, "separation value")
+
+		input       = flagset.String("input", "", "input for natural sorting")
+		inputFile   = flagset.String("input.file", "", "file required to perform natural sorting on")
+		inputGzip   = flagset.Bool("input.gzip", defaultInputGzip, "decode gzip input")
+		inputBase64 = flagset.Bool("input.base64", defaultInputBase64, "decode base 64 input")
+
+		outputFile   = flagset.String("output.file", "", "output file for action performed")
+		outputGzip   = flagset.Bool("output.gzip", defaultOutputGzip, "encode gzip output")
+		outputBase64 = flagset.Bool("output.base64", defaultOutputBase64, "encode base64 output")
 	)
 	flagset.Usage = usageFor(flagset, "sort [flags]")
 	if err := flagset.Parse(args); err != nil {
@@ -83,13 +91,13 @@ func runSort(args []string) error {
 		fsys := fs.NewRealFilesystem()
 		g.Add(func() error {
 			// Setup how we're going to read and write.
-			reader, err := read(fsys, in, inf, *inputGzip)
+			reader, err := read(fsys, in, inf, *inputGzip, *inputBase64)
 			if err != nil {
 				return err
 			}
 			defer reader.Close()
 
-			writer := write(fsys, *outputFile, *outputGzip)
+			writer := write(fsys, *outputFile, *outputGzip, *outputBase64)
 
 			// Work out how we're going to split then join on the input.
 			iso := splitJoin{
@@ -116,7 +124,7 @@ func runSort(args []string) error {
 	return g.Run()
 }
 
-func read(fsys fs.Filesystem, input, inputFile string, inputGzip bool) (reader io.ReadCloser, err error) {
+func read(fsys fs.Filesystem, input, inputFile string, inputGzip, inputBase64 bool) (reader io.ReadCloser, err error) {
 	// Read the file in a execution group, in case the file is huge.
 	// That way the cmd is still responsive for potential feedback.
 	if fsys.Exists(inputFile) {
@@ -134,20 +142,27 @@ func read(fsys fs.Filesystem, input, inputFile string, inputGzip bool) (reader i
 			return
 		}
 		// No file reader found, so default to `input` flag
-		reader = readCloser{strings.NewReader(input)}
+		reader = readCloser{strings.NewReader(input), nil}
+	}
+
+	if inputBase64 {
+		reader = readCloser{base64.NewDecoder(base64.StdEncoding, reader), reader}
 	}
 
 	if inputGzip {
-		reader, err = gzip.NewReader(reader)
+		var r io.Reader
+		r, err = gzip.NewReader(reader)
 		if err != nil {
 			return
 		}
+
+		reader = readCloser{r, reader}
 	}
 
 	return
 }
 
-func write(fsys fs.Filesystem, outputFile string, outgzip bool) writeFn {
+func write(fsys fs.Filesystem, outputFile string, outputGzip, outputBase64 bool) writeFn {
 	return func(buf *bytes.Buffer) (err error) {
 		// Work out where to write to.
 		var writer io.Writer
@@ -164,8 +179,15 @@ func write(fsys fs.Filesystem, outputFile string, outgzip bool) writeFn {
 			writer = os.Stdout
 		}
 
-		if outgzip {
+		if outputGzip {
 			w := gzip.NewWriter(writer)
+			defer w.Close()
+
+			writer = w
+		}
+
+		if outputBase64 {
+			w := base64.NewEncoder(base64.StdEncoding, writer)
 			defer w.Close()
 
 			writer = w
@@ -233,8 +255,19 @@ type splitJoin struct {
 
 type readCloser struct {
 	io.Reader
+	reader io.Reader
 }
 
-func (readCloser) Close() error {
+func (r readCloser) Close() error {
+	if r.reader != nil {
+		if x, ok := r.reader.(io.ReadCloser); ok {
+			if err := x.Close(); err != nil {
+				return err
+			}
+		}
+	}
+	if x, ok := r.Reader.(io.ReadCloser); ok {
+		return x.Close()
+	}
 	return nil
 }
