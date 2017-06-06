@@ -3,13 +3,12 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"flag"
 	"io"
 	"os"
 	"strings"
 	"unicode/utf8"
-
-	"compress/gzip"
 
 	"github.com/SimonRichardson/naturalsort/pkg/fs"
 	"github.com/SimonRichardson/naturalsort/pkg/group"
@@ -148,13 +147,13 @@ func read(fsys fs.Filesystem, input, inputFile string, inputGzip bool) (reader i
 	return
 }
 
-func write(fsys fs.Filesystem, of string, outgzip bool) writeFn {
+func write(fsys fs.Filesystem, outputFile string, outgzip bool) writeFn {
 	return func(buf *bytes.Buffer) (err error) {
 		// Work out where to write to.
 		var writer io.Writer
-		if outf := strings.TrimSpace(of); outf != "" {
+		if outFile := strings.TrimSpace(outputFile); outFile != "" {
 			var file fs.File
-			file, err = fsys.Create(outf)
+			file, err = fsys.Create(outFile)
 			defer file.Close()
 			if err != nil {
 				return err
@@ -166,7 +165,10 @@ func write(fsys fs.Filesystem, of string, outgzip bool) writeFn {
 		}
 
 		if outgzip {
-			writer = gzip.NewWriter(writer)
+			w := gzip.NewWriter(writer)
+			defer w.Close()
+
+			writer = w
 		}
 
 		// Write the output
