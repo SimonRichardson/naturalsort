@@ -1,0 +1,25 @@
+hash: 32c917684d8103c9453e2a81edb5575d404d1fafc98f2888e6bb131ad3c52890
+updated: 2017-06-06T11:21:16.308919344+01:00
+imports:
+- name: github.com/go-kit/kit
+  version: d67bb4c202e3b91377d1079b110a6c9ce23ab2f8
+  subpackages:
+  - log
+  - log/level
+- name: github.com/go-logfmt/logfmt
+  version: 390ab7935ee28ec6b286364bba9b4dd6410cb3d5
+- name: github.com/go-stack/stack
+  version: 7a2f19628aabfe68f0766b59e74d6315f8347d22
+- name: github.com/kr/logfmt
+  version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
+- name: github.com/oklog/oklog
+  version: fca58330910eb7fe6267788eddf879b1d6811176
+  subpackages:
+  - pkg/group
+- name: github.com/pkg/errors
+  version: c605e284fe17294bda444b34710735b29d1a9d90
+testImports:
+- name: github.com/SimonRichardson/crwlr
+  version: d6224e12b4cbe2c604274eab5d9d791c37bf086c
+  subpackages:
+  - pkg/group
