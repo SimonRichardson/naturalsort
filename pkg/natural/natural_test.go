@@ -1,6 +1,7 @@
 package natural
 
 import (
+	"math/rand"
 	"reflect"
 	"testing"
 )
@@ -83,4 +84,47 @@ func TestSort(t *testing.T) {
 			}
 		})
 	}
+}
+
+var res []string
+
+func benchmarkTest(n int, b *testing.B) {
+	strs := generateStrings(n)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		Sort(strs)
+	}
+
+	res = strs
+}
+
+func BenchmarkTest_8(b *testing.B)    { benchmarkTest(8, b) }
+func BenchmarkTest_16(b *testing.B)   { benchmarkTest(16, b) }
+func BenchmarkTest_32(b *testing.B)   { benchmarkTest(32, b) }
+func BenchmarkTest_64(b *testing.B)   { benchmarkTest(64, b) }
+func BenchmarkTest_128(b *testing.B)  { benchmarkTest(128, b) }
+func BenchmarkTest_512(b *testing.B)  { benchmarkTest(512, b) }
+func BenchmarkTest_1024(b *testing.B) { benchmarkTest(1024, b) }
+
+func generateStrings(n int) []string {
+	res := make([]string, n)
+	for i := 0; i < n; i++ {
+		res[i] = generateString(20)
+	}
+	return res
+}
+
+const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func generateString(s int) string {
+	var res []byte
+
+	for i := 0; i < s; i++ {
+		pos := rand.Intn(len(chars) - 1)
+		res = append(res, chars[pos])
+	}
+
+	return string(res)
 }

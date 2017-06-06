@@ -193,6 +193,9 @@ func write(fsys fs.Filesystem, outputFile string, outputGzip, outputBase64 bool)
 			writer = w
 		}
 
+		// Make sure we put a new line in for some terminals
+		buf.WriteRune('\n')
+
 		// Write the output
 		_, err = buf.WriteTo(writer)
 		return
