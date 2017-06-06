@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SimonRichardson/crwlr/pkg/group"
+	"github.com/SimonRichardson/naturalsort/pkg/group"
 )
 
 func ExampleGroup_Add_basic() {

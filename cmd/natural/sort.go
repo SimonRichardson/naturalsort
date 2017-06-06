@@ -4,13 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"flag"
 	"io"
 	"os"
 	"strings"
 	"unicode/utf8"
-
-	"encoding/base64"
 
 	"github.com/SimonRichardson/naturalsort/pkg/fs"
 	"github.com/SimonRichardson/naturalsort/pkg/group"
