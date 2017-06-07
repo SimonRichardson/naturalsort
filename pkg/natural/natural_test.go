@@ -86,6 +86,96 @@ func TestSort(t *testing.T) {
 	}
 }
 
+func TestIndexOfNumber(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		actual   string
+		expected int
+	}{
+		{
+			"empty string",
+			"",
+			-1,
+		},
+		{
+			"alpha string",
+			"ab",
+			-1,
+		},
+		{
+			"numeric string",
+			"12",
+			0,
+		},
+		{
+			"alpha then numeric string",
+			"ab12",
+			2,
+		},
+		{
+			"numeric then alpha string",
+			"12ab",
+			0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			if indexOfNumber(tc.actual) != tc.expected {
+				t.Errorf("expected: %v, actual: %v", tc.expected, tc.actual)
+			}
+		})
+	}
+}
+
+func TestIndexOfNonNumber(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		actual   string
+		expected int
+	}{
+		{
+			"empty string",
+			"",
+			-1,
+		},
+		{
+			"numeric string",
+			"12",
+			-1,
+		},
+		{
+			"alpha string",
+			"ab",
+			0,
+		},
+		{
+			"numeric then alpha string",
+			"12ab",
+			2,
+		},
+		{
+			"alpha then numeric string",
+			"ab12",
+			0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			if indexOfNonNumber(tc.actual) != tc.expected {
+				t.Errorf("expected: %v, actual: %v", tc.expected, tc.actual)
+			}
+		})
+	}
+}
+
 var res []string
 
 func benchmarkTest(n int, b *testing.B) {

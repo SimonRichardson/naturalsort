@@ -38,13 +38,15 @@ func compare(a, b string) bool {
 		return false
 	}
 
+	// Make sure we don't call mutations on the original
 	x, y := a[:], b[:]
 
 	// Strategy, walk through each segment and check against the other source.
-	// Note: that a segments are greedy, so `001` is a segment.
+	// Note: that a segments are greedy, so `001` is a segment and will be
+	// converted to `1` using `strconv.Atoi`.
 	for {
 		// Check to see if the string contains digits at the start of it
-		xPos, yPos := strings.IndexFunc(x, unicode.IsDigit), strings.IndexFunc(y, unicode.IsDigit)
+		xPos, yPos := indexOfNumber(x), indexOfNumber(y)
 		if xPos == -1 && yPos == -1 {
 			return x < y
 		} else if xPos == -1 && yPos >= 0 {
@@ -60,7 +62,7 @@ func compare(a, b string) bool {
 
 		// Move on past the non-digit
 		x, y = x[xPos:], y[yPos:]
-		xPos, yPos = strings.IndexFunc(x, not(unicode.IsDigit)), strings.IndexFunc(y, not(unicode.IsDigit))
+		xPos, yPos = indexOfNonNumber(x), indexOfNonNumber(y)
 		if xPos == -1 {
 			xPos = len(x)
 		}
@@ -71,20 +73,12 @@ func compare(a, b string) bool {
 		// Attempt to grab the integer from the string
 		// Note: Decimal positioning, because `.` are treated above, then we can use
 		// the position of matching values to check for decimal precision.
-		xNum, err := strconv.Atoi(x[:xPos])
-		if err != nil {
-			panic(errors.Wrapf(err, "invalid number %q", x[:xPos]))
-		}
-		yNum, err := strconv.Atoi(y[:yPos])
-		if err != nil {
-			panic(errors.Wrapf(err, "invalid number %q", y[:yPos]))
-		}
-
-		if xNum != yNum {
+		if xNum, yNum := coerceToInt(x[:xPos]), coerceToInt(y[:yPos]); xNum != yNum {
 			return xNum < yNum
 		}
 
-		// Sometimes numbers are not the same `001` vs `1`
+		// Sometimes numbers are not the same `001` vs `1` so rank them
+		// accordingly. Larger values (positions) will get put lastly.
 		if xPos != yPos {
 			return yPos > xPos
 		}
@@ -92,6 +86,26 @@ func compare(a, b string) bool {
 		// Continue onwards
 		x, y = x[xPos:], y[yPos:]
 	}
+}
+
+func indexOfNumber(s string) int {
+	return strings.IndexFunc(s, unicode.IsDigit)
+}
+
+func indexOfNonNumber(s string) int {
+	// We just want the inverse of the `IsDigit` code, shame `unicode` doesn't
+	// offer one.
+	return strings.IndexFunc(s, not(unicode.IsDigit))
+}
+
+// coerceToInt converts a string value to a integer
+// Note: this panic's because sorting doesn't understand failures.
+func coerceToInt(s string) int {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		panic(errors.Wrapf(err, "invalid number %q", s))
+	}
+	return n
 }
 
 func not(fn func(rune) bool) func(rune) bool {
